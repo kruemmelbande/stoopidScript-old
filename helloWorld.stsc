@@ -1,2 +1,6 @@
 var str test = "Hello World"
 out test
+var int test = 1.1
+out test
+var float test = 1
+out test
