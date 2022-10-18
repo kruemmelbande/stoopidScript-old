@@ -1,9 +1,22 @@
+from sys import argv as args, exit
 vars={}
 file="helloWorld.stsc"
-#Make this use args later
+file = args[1]
+forcerun="--forcerun" in args
+#make the interpreter not exit on error (in most cases)
+#WARNING: THIS IS NOT A GOOD IDEA
+#i made this for reasons that i dont know myself
+#use at your own risk, because this is a bad idea, and it might return unexpected results
+
+
+
 program=[]
 with open(file,"r") as f:
     program=f.readlines()
+
+
+if forcerun:
+    print("Forcerun enabled (use with care!)")
 
 def kwVar(line):
     global vars
@@ -75,7 +88,8 @@ def getValue(input:str):
             else:
                 return float(input)
         else:
-            if ["+","-","*","/","="].any(input):
+            if ["+","-","*","/","=","<",">","!"].__contains__(input):
+
                 return "not yet implemented"
             else:
                 if (input.startswith('"') or input.startswith("'")) and (input.endswith('"') or input.endswith("'")):
@@ -87,7 +101,7 @@ def getValue(input:str):
 def setVar(name,value):
     global vars
     if name in vars:
-        type=vars(name)[0]
+        type=vars[name][0]
         try:
             if type=="str":
                 vars[name]=(type,str(value))
@@ -100,9 +114,9 @@ def setVar(name,value):
             else:
                 vars[name]=(getType(value),value)
         except:
-            errorMessage=f"Cannot convert {value} ({getType(value)}) to {type}"
+            errorMessage(f"Cannot convert {value} (type : {getType(value)}) to {type}")
     else:
-        errorMessage="Variable "+name+" not found"
+        errorMessage("Variable "+name+" not found")
 
 def getType(input:any):
     input=getValue(input)
@@ -113,7 +127,12 @@ def cut(input:str,toRemove:str):
     if working[:len(toRemove)] == toRemove:
         return working[len(toRemove):].strip()
 def errorMessage(message:str):
+    global forcerun
     print("Error: "+message)
+    if forcerun:
+        print("error ignored")
+        return
+    exit()
 
 curLin=0
 while curLin<len(program):

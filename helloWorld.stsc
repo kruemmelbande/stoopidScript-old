@@ -4,3 +4,7 @@ var int test = 1.1
 out test
 var float test = 1
 out test
+
+test = "Hello World"
+out test
+out "Testing 123"
