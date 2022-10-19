@@ -77,6 +77,37 @@ keywords={
     "out":kwOut
 }
 
+def solveBasicMath(input:str) -> int|float|bool:
+    """ input: A math equasion, with two numbers or variables and one operator
+        output: A solution
+    """
+    if isIn(["+","-","*","/","<",">","^"],input):
+        for i in ["+","-","*","/","<",">","^"]:
+            if i in input:
+                comp=i
+                break
+        num1,num2=input.split(comp)
+        num1=getValue(num1)
+        num2=getValue(num2)
+
+        print(f"Found: {num1}, {comp}, {num2}")
+        if comp=="+":
+            return num1+num2
+        elif comp=="-":
+            return num1-num2
+        elif comp=="*":
+            return num1*num2
+        elif comp=="/":
+            return num1/num2
+        elif comp=="<":
+            return num1<num2
+        elif comp==">":
+            return num1>num2
+        else:
+            return num1**num2
+    else:
+        return getValue(input)
+
 def getValue(input:str):
     global vars
     if input in vars:
@@ -88,9 +119,8 @@ def getValue(input:str):
             else:
                 return float(input)
         else:
-            if ["+","-","*","/","=","<",">","!"].__contains__(input):
-
-                return "not yet implemented"
+            if isIn(["+","-","*","/","<",">","^"],input):
+                return solveBasicMath(input)
             else:
                 if (input.startswith('"') or input.startswith("'")) and (input.endswith('"') or input.endswith("'")):
                     return input[1:-1]
@@ -102,6 +132,7 @@ def setVar(name,value):
     global vars
     if name in vars:
         type=vars[name][0]
+        value=getValue(value)
         try:
             if type=="str":
                 vars[name]=(type,str(value))
@@ -133,6 +164,12 @@ def errorMessage(message:str):
         print("error ignored")
         return
     exit()
+
+def isIn(list,string):
+    for i in list:
+        if i in string:
+            return True
+    return False
 
 curLin=0
 while curLin<len(program):
