@@ -89,8 +89,6 @@ def solveBasicMath(input:str) -> int|float|bool:
         num1,num2=input.split(comp)
         num1=getValue(num1)
         num2=getValue(num2)
-
-        print(f"Found: {num1}, {comp}, {num2}")
         if comp=="+":
             return num1+num2
         elif comp=="-":
