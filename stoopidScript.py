@@ -76,6 +76,17 @@ keywords={
     "var":kwVar,
     "out":kwOut
 }
+def solveComplexMath(input:str):
+    ops=[]
+    vars=[]
+    working=input.replace(" ","")
+    if isIn(["+","-","*","/","<",">","^"],input):
+        for i in ["+","-","*","/","<",">","^"]:
+            if i in input:
+                vars.append(working.split(i)[0])
+                working=cut(working,i)
+                ops.append(i)
+    #todo: finish this
 
 def solveBasicMath(input:str) -> int|float|bool:
     """ input: A math equasion, with two numbers or variables and one operator
