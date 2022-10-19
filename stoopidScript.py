@@ -86,7 +86,29 @@ def solveComplexMath(input:str):
                 vars.append(working.split(i)[0])
                 working=cut(working,i)
                 ops.append(i)
-    #todo: finish this
+    if "(" in working:
+        start,end,stop=0,0,0
+        for k in range(len(working)):
+            if working[k] == "(":
+                start = k
+        end=1
+        for j in range(start+1, len(working)):
+
+
+            if working[j] == "(":
+                end +=1
+            if working[j] == ")":
+                end -=1
+            if end==0 :
+                stop=j
+                break
+        else:
+            print("No matching bracket")
+
+        tmpworking = working[:start]
+        tmpworking += str(int(solveComplexMath(working[start + 1 : stop])))
+        tmpworking += working[stop + 1 :]
+        return solveComplexMath(tmpworking)
 
 def solveBasicMath(input:str) -> int|float|bool:
     """ input: A math equasion, with two numbers or variables and one operator
