@@ -7,7 +7,7 @@ out test
 out "Testing 123"
 test=1+2
 out test
-out test*2*2
+out test*2*2+(2+2)
 var float test = 2.4
 out test
 var int test = test

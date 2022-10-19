@@ -176,8 +176,8 @@ def solveEquasion(equasion: str) -> float:
         for i in range(len(ops)):
             equasion += str(values[i]) + str((ops[i]))
         equasion += str(values[-1])
-        return int(str((solveEquasion(equasion))))
-
+        return (float(str((solveEquasion(equasion))))
+        )
     elif len(ops) == 1:
         #return float(operators[ops[0]](float(values[0]), float(values[1])))
         return solveBasicMath(f"{float(values[0])}{ops[0]}{float(values[1])}")
