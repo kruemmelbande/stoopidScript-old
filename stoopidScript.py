@@ -1,3 +1,4 @@
+import operator
 from sys import argv as args, exit
 vars={}
 file="helloWorld.stsc"
@@ -27,41 +28,41 @@ def kwVar(line):
             working=working.split('=')
             name=working[0].strip()
             type="str"
-            value=working[1].split('"')[1]
+            value=getValue(working[1].split('"')[1])
             vars[name]=(type,value)
     elif working.startswith("int"):
         working=cut(working,"int")
         working=working.split('=')
         name=working[0].strip()
         type="int"
-        value=int(float(working[1]))
+        value=int(float(getValue(working[1])))
         vars[name]=(type,value)
     elif working.startswith("float"):
         working=cut(working,"float")
         working=working.split('=')
         name=working[0].strip()
         type="float"
-        value=float(working[1])
+        value=float(getValue(working[1]))
         vars[name]=(type,value)
     elif working.startswith("bool"):
         working=cut(working,"bool")
         working=working.split('=')
         name=working[0].strip()
         type="bool"
-        value=bool(working[1])
+        value=bool(getValue(working[1]))
         vars[name]=(type,value)
     elif working.startswith("dynamic"):
         working=cut(working,"dynamic")
         working=working.split('=')
         name=working[0].strip()
         type="dynamic"
-        value=working[1]
+        value=getValue(working[1])
         vars[name]=(type,value)
     elif working.startswith("auto"):
-        working=cut(working,"dynamic")
+        working=cut(working,"auto")
         working=working.split('=')
         name=working[0].strip()
-        value=working[1]
+        value=getValue(working[1])
         type=getType(value)
         vars[name]=(type,value)
 
@@ -76,28 +77,38 @@ keywords={
     "var":kwVar,
     "out":kwOut
 }
-def solveComplexMath(input:str):
-    ops=[]
-    vars=[]
-    working=input.replace(" ","")
-    if isIn(["+","-","*","/","<",">","^"],input):
-        for i in ["+","-","*","/","<",">","^"]:
-            if i in input:
-                vars.append(working.split(i)[0])
-                working=cut(working,i)
-                ops.append(i)
-    if "(" in working:
+def isNumber(x):
+    try:
+        a=float(x)
+        return True
+    except:
+        return False
+
+def solveEquasion(equasion: str) -> float:
+    """Solves the given equasion
+
+    Args:
+        equasion (str): the mathematical equasion to be solved
+
+    Returns:
+        float: solved equasion
+    """
+    global vars
+    orderOfOps = [["+", "-"], ["*", "/"], ["%", "^"]]
+    operators=["+","-","*","/","<",">","^"]
+    equasion = equasion.replace(" ", "")
+    if "(" in equasion:
         start,end,stop=0,0,0
-        for k in range(len(working)):
-            if working[k] == "(":
+        for k in range(len(equasion)):
+            if equasion[k] == "(":
                 start = k
         end=1
-        for j in range(start+1, len(working)):
+        for j in range(start+1, len(equasion)):
 
 
-            if working[j] == "(":
+            if equasion[j] == "(":
                 end +=1
-            if working[j] == ")":
+            if equasion[j] == ")":
                 end -=1
             if end==0 :
                 stop=j
@@ -105,15 +116,80 @@ def solveComplexMath(input:str):
         else:
             print("No matching bracket")
 
-        tmpworking = working[:start]
-        tmpworking += str(int(solveComplexMath(working[start + 1 : stop])))
-        tmpworking += working[stop + 1 :]
-        return solveComplexMath(tmpworking)
+        tmpequasion = equasion[:start]
+        tmpequasion += str(int(solveEquasion(equasion[start + 1 : stop])))
+        tmpequasion += equasion[stop + 1 :]
+        return solveEquasion(tmpequasion)
+    equasion = str(equasion)
+    for i in vars:
+        equasion = equasion.replace(i, str(vars[i][1]))
+    ops = []
+    values = []
+
+    x = 0
+    while x < len(equasion):
+        if isNumber(equasion[x]):
+            if x > 0 and (
+                isNumber(equasion[x - 1])
+                or values[len(values) - 1][len(values[len(values) - 1]) - 1]
+                in ["-", "."]
+            ):
+                values[len(values) - 1] += equasion[x]
+            else:
+                values.append(str(equasion[x]))
+        elif equasion[x] in [o for o in operators]:
+            if (x == 0 and equasion[x] == "-") or (
+                x > 0 and not isNumber(equasion[x - 1])
+            ):
+                values.append(equasion[x])
+            else:
+                ops.append(str(equasion[x]))
+        elif equasion[x] == ".":
+            if x > 0 and isNumber(equasion[x - 1]):
+                values[len(values) - 1] += "."
+            else:
+                values.append("0.")
+        x += 1
+
+    # now we have the values and the operators, find the order in which they should be solved
+    order = []
+    for i in range(len(ops)):
+        for k in range(len(orderOfOps)):
+            if ops[i] in orderOfOps[k]:
+                order.append(k)
+
+    # now we have the order in which the operators should be solved, we need to solve them
+    minorder = max(order)
+    for i in range(len(ops)):
+        if order[i] == minorder:
+            values[i]=solveBasicMath(f"{float(values[i])}{ops[i]}{float(values[i + 1])}")
+
+            values.pop(i + 1)
+            ops.pop(i)
+
+            order.pop(i)
+            break
+    # after we have solved the first operator, we need to solve the rest
+    if len(ops) > 1:
+        # recreate the equation
+        equasion = ""
+        for i in range(len(ops)):
+            equasion += str(values[i]) + str((ops[i]))
+        equasion += str(values[-1])
+        return int(str((solveEquasion(equasion))))
+
+    elif len(ops) == 1:
+        #return float(operators[ops[0]](float(values[0]), float(values[1])))
+        return solveBasicMath(f"{float(values[0])}{ops[0]}{float(values[1])}")
+    else:
+
+        return int(values[0])
 
 def solveBasicMath(input:str) -> int|float|bool:
     """ input: A math equasion, with two numbers or variables and one operator
         output: A solution
     """
+
     if isIn(["+","-","*","/","<",">","^"],input):
         for i in ["+","-","*","/","<",">","^"]:
             if i in input:
@@ -122,42 +198,49 @@ def solveBasicMath(input:str) -> int|float|bool:
         num1,num2=input.split(comp)
         num1=getValue(num1)
         num2=getValue(num2)
+
         if comp=="+":
-            return num1+num2
+            out= num1+num2
         elif comp=="-":
-            return num1-num2
+            out= num1-num2
         elif comp=="*":
-            return num1*num2
+            out= num1*num2
         elif comp=="/":
-            return num1/num2
+            out= num1/num2
         elif comp=="<":
-            return num1<num2
+            out= num1<num2
         elif comp==">":
-            return num1>num2
+            out= num1>num2
         else:
             return num1**num2
+        return out
+
     else:
         return getValue(input)
 
+def getRawType(input:any):
+    return type(input).__name__
 def getValue(input:str):
+    if getRawType(input)=="str":
+        input=input.strip()
     global vars
     if input in vars:
         return vars[input][1]
     else:
-        if str(input).isnumeric():
+        if isNumber(input):
             if str(input).isdigit():
                 return int(input)
             else:
                 return float(input)
         else:
             if isIn(["+","-","*","/","<",">","^"],input):
-                return solveBasicMath(input)
+                return solveEquasion(input)
             else:
                 if (input.startswith('"') or input.startswith("'")) and (input.endswith('"') or input.endswith("'")):
                     return input[1:-1]
                 else:
-                    raise Exception("Unknown value type")
-
+                    #raise Exception("Unknown value type")
+                    return input
 
 def setVar(name,value):
     global vars
