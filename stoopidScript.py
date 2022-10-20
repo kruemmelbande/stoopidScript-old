@@ -19,6 +19,41 @@ with open(file,"r") as f:
 if forcerun:
     print("Forcerun enabled (use with care!)")
 
+def kwIf(line):
+    global program, curLin
+    working=cut(line,"if")
+    toMath=working
+    if "{" in working:
+        toMath=working.replace("{","")
+
+    solved=getValue(toMath)
+    if solved:
+        return
+    else:
+        i=curLin-1
+        a=0
+        b=1
+        try:
+            while 1:
+                i+=1
+                line=program[i].strip()
+                for k in line:
+                    if k=="{":
+                        a+=1
+                        b=0
+                    if k=="}":
+                        a-=1
+                        b=0
+                    if a==0 and b==0:
+                        break
+                else:
+                    continue
+                break
+
+        except Exception:
+            errorMessage("Failed to find closing bracket!")
+        curLin=i
+
 def kwVar(line):
     global vars
     working=cut(line,"var")
@@ -56,7 +91,7 @@ def kwVar(line):
         working=working.split('=')
         name=working[0].strip()
         type="bool"
-        value=bool(getValue(working[1]))
+        value=isTruthy(getValue(working[1]))
         vars[name]=(type,value)
     elif working.startswith("dynamic"):
         working=cut(working,"dynamic")
@@ -84,7 +119,8 @@ def kwOut(line):
 
 keywords={
     "var":kwVar,
-    "out":kwOut
+    "out":kwOut,
+    "if" :kwIf
 }
 
 def isNumber(x):
@@ -210,14 +246,13 @@ def solveBasicMath(input:str) -> int|float|bool:
     """
 
     if isIn(["+","-","*","/","<",">","^"],input):
-        for i in ["+","-","*","/","<",">","^"]:
+        for i in ["+","*","/","<",">","^","-"]:
             if i in input:
                 comp=i
                 break
         num1,num2=input.split(comp)
         num1=getValue(num1)
         num2=getValue(num2)
-
         if comp=="+":
             out= num1+num2
         elif comp=="-":
@@ -261,12 +296,15 @@ def getValue(input:str):
                 else:
                     if input.lower() in ["true","false","1","0","yes","no"]:
                         return isTruthy(input)
+                    if input.startswith("!"):
+                        return not getValue(input[1:])
                     errorMessage(f"Unknown value type : {input}", e=Exception("Unknown type exception"))
                     #raise Exception("Unknown value type:", input)
                     return f'"{input}"'
 
-def isTruthy(str):
-    return str.lower() in ["true","1","yes"]
+def isTruthy(inp):
+
+    return str(inp).lower() in ["true","1","yes"]
 
 
 def setVar(name,value):

@@ -18,3 +18,9 @@ test=1+2+3
 out test
 var bool test = 1<2
 out test * True
+if test {
+    out "Works!"
+}
+if !test {
+    out "Doesnt work!"
+}

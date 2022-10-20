@@ -1,0 +1,3 @@
+var bool owo = false
+var bool uwu = owo*-1
+out uwu
