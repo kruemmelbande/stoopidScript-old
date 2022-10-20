@@ -70,42 +70,48 @@ def kwVar(line):
             working=working.split('=')
             name=working[0].strip()
             type="str"
-            value=str(getValue(working[1]))
+            working="=".join(working[1:])
+            value=getValue(working)
             vars[name]=(type,value)
+
     elif working.startswith("int"):
         working=cut(working,"int")
         working=working.split('=')
         name=working[0].strip()
         type="int"
-        value=int(float(getValue(working[1])))
-        vars[name]=(type,value)
+        working="=".join(working[1:])
+        value=int(float(getValue(working)))
     elif working.startswith("float"):
         working=cut(working,"float")
         working=working.split('=')
         name=working[0].strip()
         type="float"
-        value=float(getValue(working[1]))
+        working="=".join(working[1:])
+        value=float(str(getValue(working)))
         vars[name]=(type,value)
     elif working.startswith("bool"):
         working=cut(working,"bool")
         working=working.split('=')
         name=working[0].strip()
         type="bool"
-        value=isTruthy(getValue(working[1]))
+        working="=".join(working[1:])
+        value=isTruthy(getValue(working))
         vars[name]=(type,value)
     elif working.startswith("dynamic"):
         working=cut(working,"dynamic")
         working=working.split('=')
         name=working[0].strip()
         type="dynamic"
-        value=getValue(working[1])
+        working="=".join(working[1:])
+        value=getValue(working)
         vars[name]=(type,value)
     elif working.startswith("auto"):
         working=cut(working,"auto")
         working=working.split('=')
         name=working[0].strip()
-        value=getValue(working[1])
-        type=getType(value)
+        working="=".join(working[1:])
+        value=getValue(str(working))
+        type=getRawType(value)
         vars[name]=(type,value)
 
 
@@ -141,8 +147,8 @@ def solveEquasion(equasion: str) -> float:
     """
 
     global vars
-    orderOfOps = [["<",">"],["+", "-"], ["*", "/"], ["%", "^"]]
-    operators=["+","-","*","/","<",">","^"]
+    orderOfOps = [["<<",">>","==","<=",">="],["+", "-"], ["*", "/"], ["%", "^"]]
+    operators=["+","*","/","<<",">>","^","==","<=",">=","-"]
     equasion = equasion.replace(" ", "")
     if "(" in equasion:
         start,end,stop=0,0,0
@@ -186,13 +192,18 @@ def solveEquasion(equasion: str) -> float:
                 values[len(values) - 1] += equasion[x]
             else:
                 values.append(str(equasion[x]))
-        elif equasion[x] in [o for o in operators]:
+        elif any((equasion[x:x+len(o)]==o) for o in operators):
             if (x == 0 and equasion[x] == "-") or (
                 x > 0 and not isNumber(equasion[x - 1])
             ):
                 values.append(equasion[x])
             else:
-                ops.append(str(equasion[x]))
+                tmp=[(o,equasion[x:x+len(o)]==o) for o in operators]
+                for i in tmp:
+                    if i[1]:
+                        break
+                ops.append(str(equasion[x:x+len(i[0])]))
+
         elif equasion[x] == ".":
             if x > 0 and isNumber(equasion[x - 1]):
                 values[len(values) - 1] += "."
@@ -206,7 +217,7 @@ def solveEquasion(equasion: str) -> float:
         for k in range(len(orderOfOps)):
             if ops[i] in orderOfOps[k]:
                 order.append(k)
-
+    #print(ops,values,order)
     # now we have the order in which the operators should be solved, we need to solve them
     minorder = max(order)
     for i in range(len(ops)):
@@ -244,9 +255,10 @@ def solveBasicMath(input:str) -> int|float|bool:
     """ input: A math equasion, with two numbers or variables and one operator
         output: A solution
     """
-
-    if isIn(["+","-","*","/","<",">","^"],input):
-        for i in ["+","*","/","<",">","^","-"]:
+    print(input)
+    ops=["+","*","/","<<",">>","^","==","<=",">=","-"]
+    if isIn(ops,input):
+        for i in ops:
             if i in input:
                 comp=i
                 break
@@ -261,10 +273,16 @@ def solveBasicMath(input:str) -> int|float|bool:
             out= num1*num2
         elif comp=="/":
             out= num1/num2
-        elif comp=="<":
+        elif comp=="<<":
             out= num1<num2
-        elif comp==">":
+        elif comp==">>":
             out= num1>num2
+        elif comp=="==":
+            out=num1==num2
+        elif comp=="<=":
+            out=num1<=num2
+        elif comp==">=":
+            out=num1>=num2
         else:
             return num1**num2
         return out
@@ -288,10 +306,14 @@ def getValue(input:str):
             else:
                 return float(input)
         else:
-            if isIn(["+","-","*","/","<",">","^"],input):
+            sep=0
+            for i in str(input):
+                if i in ["'",'"']:
+                    sep+=1
+            if isIn(["+","*","/","<<",">>","^","==","<=",">=","-"],input):
                 return solveEquasion(input)
             else:
-                if (input.startswith('"') or input.startswith("'")) and (input.endswith('"') or input.endswith("'")):
+                if (input.startswith('"') or input.startswith("'")) and (input.endswith('"') or input.endswith("'")) and sep==2:
                     return input
                 else:
                     if input.lower() in ["true","false","1","0","yes","no"]:
