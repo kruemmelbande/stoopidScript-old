@@ -103,8 +103,9 @@ def solveEquasion(equasion: str) -> float:
     Returns:
         float: solved equasion
     """
+
     global vars
-    orderOfOps = [["+", "-"], ["*", "/"], ["%", "^"]]
+    orderOfOps = [["<",">"],["+", "-"], ["*", "/"], ["%", "^"]]
     operators=["+","-","*","/","<",">","^"]
     equasion = equasion.replace(" ", "")
     if "(" in equasion:
@@ -133,6 +134,8 @@ def solveEquasion(equasion: str) -> float:
     equasion = str(equasion)
     for i in vars:
         equasion = equasion.replace(i, str(vars[i][1]))
+    equasion=equasion.replace("True","1").replace("true","1").replace("yes","1").replace("False","0").replace("false","0").replace("no","0")
+
     ops = []
     values = []
 
@@ -236,6 +239,7 @@ def solveBasicMath(input:str) -> int|float|bool:
 
 def getRawType(input:any):
     return type(input).__name__
+
 def getValue(input:str):
     if getRawType(input)=="str":
         input=input.strip()
@@ -255,9 +259,15 @@ def getValue(input:str):
                 if (input.startswith('"') or input.startswith("'")) and (input.endswith('"') or input.endswith("'")):
                     return input
                 else:
+                    if input.lower() in ["true","false","1","0","yes","no"]:
+                        return isTruthy(input)
                     errorMessage(f"Unknown value type : {input}", e=Exception("Unknown type exception"))
                     #raise Exception("Unknown value type:", input)
                     return f'"{input}"'
+
+def isTruthy(str):
+    return str.lower() in ["true","1","yes"]
+
 
 def setVar(name,value):
     global vars
