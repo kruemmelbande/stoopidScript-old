@@ -28,7 +28,14 @@ def kwVar(line):
             working=working.split('=')
             name=working[0].strip()
             type="str"
-            value=getValue(working[1].split('"')[1])
+            value=working[1]
+            vars[name]=(type,value)
+        else:
+            working=cut(working,"str")
+            working=working.split('=')
+            name=working[0].strip()
+            type="str"
+            value=str(getValue(working[1]))
             vars[name]=(type,value)
     elif working.startswith("int"):
         working=cut(working,"int")
@@ -70,13 +77,16 @@ def kwVar(line):
 def kwOut(line):
     working=cut(line,"out")
     global vars
+    working=getValue(working)
+    print(cleanString(str(working)))
 
-    print(getValue(working))
+
 
 keywords={
     "var":kwVar,
     "out":kwOut
 }
+
 def isNumber(x):
     try:
         a=float(x)
@@ -185,6 +195,12 @@ def solveEquasion(equasion: str) -> float:
 
         return int(values[0])
 
+def cleanString(input : str):
+    input=input.strip()
+    if (input.startswith('"') or input.startswith("'")) and (input.endswith('"') or input.endswith("'")):
+        return input[1:-1]
+    return input
+
 def solveBasicMath(input:str) -> int|float|bool:
     """ input: A math equasion, with two numbers or variables and one operator
         output: A solution
@@ -237,10 +253,11 @@ def getValue(input:str):
                 return solveEquasion(input)
             else:
                 if (input.startswith('"') or input.startswith("'")) and (input.endswith('"') or input.endswith("'")):
-                    return input[1:-1]
-                else:
-                    #raise Exception("Unknown value type")
                     return input
+                else:
+                    errorMessage(f"Unknown value type : {input}", e=Exception("Unknown type exception"))
+                    #raise Exception("Unknown value type:", input)
+                    return f'"{input}"'
 
 def setVar(name,value):
     global vars
@@ -263,6 +280,9 @@ def setVar(name,value):
     else:
         errorMessage("Variable "+name+" not found")
 
+def toString(input: any):
+    return f'"{cleanString(str(input))}"'
+
 def getType(input:any):
     input=getValue(input)
     return type(input).__name__
@@ -271,12 +291,14 @@ def cut(input:str,toRemove:str):
     working=input.strip()
     if working[:len(toRemove)] == toRemove:
         return working[len(toRemove):].strip()
-def errorMessage(message:str):
+def errorMessage(message:str,e=None):
     global forcerun
     print("Error: "+message)
     if forcerun:
         print("error ignored")
         return
+    if e!=None:
+        raise e
     exit()
 
 def isIn(list,string):

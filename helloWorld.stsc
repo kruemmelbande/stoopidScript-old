@@ -12,3 +12,7 @@ var float test = 2.4
 out test
 var int test = test
 out test
+var str test = "uwu"
+out test
+test=1+2+3
+out test
