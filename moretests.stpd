@@ -1,8 +1,8 @@
-var bool test = 1 << 2
-out test
-if test {
-    out "Works!"
+var int x = 0
+var label start
+if (x==10){
+    end
 }
-if !test {
-    out "Doesnt work!"
-}
+out x
+x=x+1
+goto start
