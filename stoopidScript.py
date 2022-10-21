@@ -3,11 +3,15 @@ vars={}
 file="helloWorld.stsc"
 file = args[1]
 forcerun="--forcerun" in args
+timed= "--time" in args
 #make the interpreter not exit on error (in most cases)
 #WARNING: THIS IS NOT A GOOD IDEA
 #i made this for reasons that i dont know myself
 #use at your own risk, because this is a bad idea, and it might return unexpected results
 
+if timed:
+    import time
+    startTime=time.perf_counter()
 
 
 program=[]
@@ -140,7 +144,7 @@ def kwOut(line):
     print(cleanString(str(working)))
 
 def kwEnd(line):
-    exit()
+    onExit()
 
 def kwGoto(line):
     global curLin
@@ -407,7 +411,7 @@ def errorMessage(message:str,e:Exception=None):
     print(f"\033[0mError dump: \nvars: {vars}\nlineinProgram:{curLin}\nlineinInterpreter:{lineInInterpreter}\033[0m")
 
     if not forcerun:
-        exit()
+        onExit()
     if forcerun:
         print("\033[0merror ignored")
         return
@@ -421,13 +425,21 @@ def isIn(list,string):
             return True
     return False
 
+def onExit():
+    global timed,startTime
+    if timed:
+        print(f"Execution time: {time.perf_counter()-startTime}s")
+    exit()
+
 curLin=0
 while curLin<len(program):
     c=program[curLin]
-    if c.strip().split(" ")[0] in keywords:
-        keywords[c.strip().split(" ")[0]](c)
+    kw=c.strip().split(" ")[0]
+    if kw in keywords:
+        keywords[kw](c)
     else:
         if '=' in c:
             if c.strip().split("=")[0].strip() in vars:
                 setVar(c.strip().split("=")[0].strip(),c.strip().split("=")[1].strip())
     curLin+=1
+onExit()
