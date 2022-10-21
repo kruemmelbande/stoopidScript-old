@@ -1,4 +1,3 @@
-import operator
 from sys import argv as args, exit
 vars={}
 file="helloWorld.stsc"
@@ -19,41 +18,46 @@ with open(file,"r") as f:
 if forcerun:
     print("Forcerun enabled (use with care!)")
 
+
+operators= ["+","*","/","<<",">>","^","==","<=",">=","-"]
+
 def kwIf(line):
-    global program, curLin
-    working=cut(line,"if")
-    toMath=working
-    if "{" in working:
-        toMath=working.replace("{","")
+    try:
+        global program, curLin
+        working=cut(line,"if")
+        toMath=working
+        if "{" in working:
+            toMath=working.replace("{","")
 
-    solved=getValue(toMath)
-    if solved:
-        return
-    else:
-        i=curLin-1
-        a=0
-        b=1
-        try:
-            while 1:
-                i+=1
-                line=program[i].strip()
-                for k in line:
-                    if k=="{":
-                        a+=1
-                        b=0
-                    if k=="}":
-                        a-=1
-                        b=0
-                    if a==0 and b==0:
-                        break
-                else:
-                    continue
-                break
+        solved=getValue(toMath)
+        if solved:
+            return
+        else:
+            i=curLin-1
+            a=0
+            b=1
+            try:
+                while 1:
+                    i+=1
+                    line=program[i].strip()
+                    for k in line:
+                        if k=="{":
+                            a+=1
+                            b=0
+                        if k=="}":
+                            a-=1
+                            b=0
+                        if a==0 and b==0:
+                            break
+                    else:
+                        continue
+                    break
 
-        except Exception:
-            errorMessage("Failed to find closing bracket!")
-        curLin=i
-
+            except Exception:
+                errorMessage("Failed to find closing bracket!")
+            curLin=i
+    except Exception as e:
+        errorMessage("error resolving if statement, ",e=e)
 def kwVar(line):
     global vars
     working=cut(line,"var")
@@ -81,6 +85,7 @@ def kwVar(line):
         type="int"
         working="=".join(working[1:])
         value=int(float(getValue(working)))
+        vars[name]=(type,value)
     elif working.startswith("float"):
         working=cut(working,"float")
         working=working.split('=')
@@ -113,7 +118,20 @@ def kwVar(line):
         value=getValue(str(working))
         type=getRawType(value)
         vars[name]=(type,value)
-
+    elif working.startswith("label"):
+        global curLin
+        working=cut(working,"label")
+        if "=" in working:
+            working=working.split('=')
+            name=working[0].strip()
+            type="label"
+            value=int(getValue(working[1]))
+            vars[name]=(type,value)
+        else:
+            name=working.strip()
+            type="label"
+            value=curLin
+            vars[name]=(type,value)
 
 def kwOut(line):
     working=cut(line,"out")
@@ -121,12 +139,21 @@ def kwOut(line):
     working=getValue(working)
     print(cleanString(str(working)))
 
+def kwEnd(line):
+    exit()
 
+def kwGoto(line):
+    global curLin
+    dest=getValue(cut(line,"goto"))
+    curLin=dest-1
 
 keywords={
     "var":kwVar,
     "out":kwOut,
-    "if" :kwIf
+    "if" :kwIf,
+    "end":kwEnd,
+    "goto":kwGoto,
+    None:None
 }
 
 def isNumber(x):
@@ -145,105 +172,112 @@ def solveEquasion(equasion: str) -> float:
     Returns:
         float: solved equasion
     """
+    try:
 
-    global vars
-    orderOfOps = [["<<",">>","==","<=",">="],["+", "-"], ["*", "/"], ["%", "^"]]
-    operators=["+","*","/","<<",">>","^","==","<=",">=","-"]
-    equasion = equasion.replace(" ", "")
-    if "(" in equasion:
-        start,end,stop=0,0,0
-        for k in range(len(equasion)):
-            if equasion[k] == "(":
-                start = k
-        end=1
-        for j in range(start+1, len(equasion)):
+        global vars,operators
+        equasion = str(equasion)
+        for i in vars:
+            equasion = equasion.replace(i, str(vars[i][1]))
+        equasion=equasion.replace("True","1").replace("true","1").replace("yes","1").replace("False","0").replace("false","0").replace("no","0")
+        orderOfOps = [["<<",">>","==","<=",">="],["+", "-"], ["*", "/"], ["%", "^"]]
+        equasion = equasion.replace(" ", "")
+        if "(" in equasion:
+
+            start,end,stop=0,0,0
+            for k in range(len(equasion)):
+                if equasion[k] == "(":
+                    start = k
+            end=1
+            for j in range(start+1, len(equasion)):
 
 
-            if equasion[j] == "(":
-                end +=1
-            if equasion[j] == ")":
-                end -=1
-            if end==0 :
-                stop=j
-                break
-        else:
-            print("No matching bracket")
-
-        tmpequasion = equasion[:start]
-        tmpequasion += str(int(solveEquasion(equasion[start + 1 : stop])))
-        tmpequasion += equasion[stop + 1 :]
-        return solveEquasion(tmpequasion)
-    equasion = str(equasion)
-    for i in vars:
-        equasion = equasion.replace(i, str(vars[i][1]))
-    equasion=equasion.replace("True","1").replace("true","1").replace("yes","1").replace("False","0").replace("false","0").replace("no","0")
-
-    ops = []
-    values = []
-
-    x = 0
-    while x < len(equasion):
-        if isNumber(equasion[x]):
-            if x > 0 and (
-                isNumber(equasion[x - 1])
-                or values[len(values) - 1][len(values[len(values) - 1]) - 1]
-                in ["-", "."]
-            ):
-                values[len(values) - 1] += equasion[x]
+                if equasion[j] == "(":
+                    end +=1
+                if equasion[j] == ")":
+                    end -=1
+                if end==0 :
+                    stop=j
+                    break
             else:
-                values.append(str(equasion[x]))
-        elif any((equasion[x:x+len(o)]==o) for o in operators):
-            if (x == 0 and equasion[x] == "-") or (
-                x > 0 and not isNumber(equasion[x - 1])
-            ):
-                values.append(equasion[x])
-            else:
-                tmp=[(o,equasion[x:x+len(o)]==o) for o in operators]
-                for i in tmp:
-                    if i[1]:
-                        break
-                ops.append(str(equasion[x:x+len(i[0])]))
+                print("No matching bracket")
+            #print(equasion[start + 1 : stop])
+            tmpequasion = equasion[:start]
+            tmpequasion += str(int(getValue(equasion[start + 1 : stop])))
+            tmpequasion += equasion[stop + 1 :]
+            return getValue(tmpequasion)
 
-        elif equasion[x] == ".":
-            if x > 0 and isNumber(equasion[x - 1]):
-                values[len(values) - 1] += "."
-            else:
-                values.append("0.")
-        x += 1
 
-    # now we have the values and the operators, find the order in which they should be solved
-    order = []
-    for i in range(len(ops)):
-        for k in range(len(orderOfOps)):
-            if ops[i] in orderOfOps[k]:
-                order.append(k)
-    #print(ops,values,order)
-    # now we have the order in which the operators should be solved, we need to solve them
-    minorder = max(order)
-    for i in range(len(ops)):
-        if order[i] == minorder:
-            values[i]=solveBasicMath(f"{float(values[i])}{ops[i]}{float(values[i + 1])}")
+        ops = []
+        values = []
 
-            values.pop(i + 1)
-            ops.pop(i)
+        x = 0
+        while x < len(equasion):
+            if isNumber(equasion[x]):
+                if x > 0 and (
+                    isNumber(equasion[x - 1])
+                    or values[len(values) - 1][len(values[len(values) - 1]) - 1]
+                    in ["-", "."]
+                ):
+                    values[len(values) - 1] += equasion[x]
+                else:
+                    values.append(str(equasion[x]))
+            elif any((equasion[x:x+len(o)]==o) for o in operators):
+                if (x == 0 and equasion[x] == "-") or (
+                    x > 0 and not isNumber(equasion[x - 1])
+                ):
+                    values.append(equasion[x])
+                else:
+                    tmp=[(o,equasion[x:x+len(o)]==o) for o in operators]
+                    for i in tmp:
+                        if i[1]:
+                            break
+                    ops.append(str(equasion[x:x+len(i[0])]))
 
-            order.pop(i)
-            break
-    # after we have solved the first operator, we need to solve the rest
-    if len(ops) > 1:
-        # recreate the equation
-        equasion = ""
+            elif equasion[x] == ".":
+                if x > 0 and isNumber(equasion[x - 1]):
+                    values[len(values) - 1] += "."
+                else:
+                    values.append("0.")
+            x += 1
+
+        # now we have the values and the operators, find the order in which they should be solved
+        order = []
         for i in range(len(ops)):
-            equasion += str(values[i]) + str((ops[i]))
-        equasion += str(values[-1])
-        return (float(str((solveEquasion(equasion))))
-        )
-    elif len(ops) == 1:
-        #return float(operators[ops[0]](float(values[0]), float(values[1])))
-        return solveBasicMath(f"{float(values[0])}{ops[0]}{float(values[1])}")
-    else:
+            for k in range(len(orderOfOps)):
+                if ops[i] in orderOfOps[k]:
+                    order.append(k)
+        #print(ops,values,order)
+        # now we have the order in which the operators should be solved, we need to solve them
+        try:
+            minorder = max(order)
+        except Exception as e:
+            errorMessage(f"Critical error when solving math!{order}{values}{ops}")
+        for i in range(len(ops)):
+            if order[i] == minorder:
+                values[i]=solveBasicMath(f"{float(values[i])}{ops[i]}{float(values[i + 1])}")
 
-        return int(values[0])
+                values.pop(i + 1)
+                ops.pop(i)
+
+                order.pop(i)
+                break
+        # after we have solved the first operator, we need to solve the rest
+        if len(ops) > 1:
+            # recreate the equation
+            equasion = ""
+            for i in range(len(ops)):
+                equasion += str(values[i]) + str((ops[i]))
+            equasion += str(values[-1])
+            return (float(str((getValue(equasion))))
+            )
+        elif len(ops) == 1:
+            #return float(operators[ops[0]](float(values[0]), float(values[1])))
+            return solveBasicMath(f"{float(values[0])}{ops[0]}{float(values[1])}")
+        else:
+
+            return int(values[0])
+    except Exception as e:
+            errorMessage(f"Failed to solve equasion {equasion}",e=e)
 
 def cleanString(input : str):
     input=input.strip()
@@ -255,8 +289,9 @@ def solveBasicMath(input:str) -> int|float|bool:
     """ input: A math equasion, with two numbers or variables and one operator
         output: A solution
     """
-    print(input)
-    ops=["+","*","/","<<",">>","^","==","<=",">=","-"]
+    #print(input)
+    global operators
+    ops=operators
     if isIn(ops,input):
         for i in ops:
             if i in input:
@@ -310,7 +345,7 @@ def getValue(input:str):
             for i in str(input):
                 if i in ["'",'"']:
                     sep+=1
-            if isIn(["+","*","/","<<",">>","^","==","<=",">=","-"],input):
+            if isIn(operators,input):
                 return solveEquasion(input)
             else:
                 if (input.startswith('"') or input.startswith("'")) and (input.endswith('"') or input.endswith("'")) and sep==2:
@@ -361,11 +396,20 @@ def cut(input:str,toRemove:str):
     working=input.strip()
     if working[:len(toRemove)] == toRemove:
         return working[len(toRemove):].strip()
-def errorMessage(message:str,e=None):
+
+def errorMessage(message:str,e:Exception=None):
     global forcerun
-    print("Error: "+message)
+    print("\033[91mError: "+message)
+    if e != None:
+        lineInInterpreter="\033[91mNot availablen\033[0m"
+    else:
+        lineInInterpreter=e.__traceback__.tb_lineno
+    print(f"\033[0mError dump: \nvars: {vars}\nlineinProgram:{curLin}\nlineinInterpreter:{lineInInterpreter}\033[0m")
+
+    if not forcerun:
+        exit()
     if forcerun:
-        print("error ignored")
+        print("\033[0merror ignored")
         return
     if e!=None:
         raise e
