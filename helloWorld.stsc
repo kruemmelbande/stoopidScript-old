@@ -16,7 +16,7 @@ var str test = "uwu"
 out test
 test=1+2+3
 out test
-var bool test = 1 == 2
+var bool test = 1 << 2
 out test
 if test {
     out "Works!"
