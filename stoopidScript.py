@@ -1,3 +1,4 @@
+import array
 from sys import argv as args, exit
 vars={}
 file="helloWorld.stsc"
@@ -175,6 +176,8 @@ def runFunction(name): #Feeling cute, might git reset --hard later after i break
     "goto":kwGoto,
     None:None
     }
+    #this is me from the past! If you are trying to understand what im trying to do here, i am sorry, i dont know either
+    #anyway, good lucK!
 def kwGoto(line):
     global curLin
     dest=getValue(cut(line,"goto"))
@@ -196,15 +199,21 @@ def isNumber(x):
     except:
         return False
 
-def solveEquasion(equasion: str) -> float:
+def solveEquasion(equasion: str,locals:dict=None) -> float:
     """Solves the given equasion
-
     Args:
         equasion (str): the mathematical equasion to be solved
 
     Returns:
         float: solved equasion
     """
+    if locals!=None: 
+        #does some weird stuff to make the locals work, in case i actually bothered to implement them
+        oldGetValue=getValue
+        def getValue(input):
+            if input in locals:
+                return locals[input][1]
+            return oldGetValue(input)
     try:
 
         global vars,operators
