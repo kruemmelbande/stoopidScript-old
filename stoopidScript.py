@@ -25,6 +25,14 @@ if forcerun:
 
 operators= ["+","*","/","<<",">>","^","==","<=",">=","-"]
 
+def kwDef(line):
+    global vars,curLin
+    working=cut(line,"def")
+    name=working
+    type="func"
+    value=curLin
+    vars[name]=(type,value)
+
 def kwIf(line):
     try:
         global program, curLin
@@ -62,7 +70,8 @@ def kwIf(line):
             curLin=i
     except Exception as e:
         errorMessage("error resolving if statement, ",e=e)
-def kwVar(line):
+
+def kwVar(line,local=False):
     global vars
     working=cut(line,"var")
     if working.startswith("str"):
@@ -72,7 +81,7 @@ def kwVar(line):
             name=working[0].strip()
             type="str"
             value=working[1]
-            vars[name]=(type,value)
+            
         else:
             working=cut(working,"str")
             working=working.split('=')
@@ -80,7 +89,7 @@ def kwVar(line):
             type="str"
             working="=".join(working[1:])
             value=getValue(working)
-            vars[name]=(type,value)
+            
 
     elif working.startswith("int"):
         working=cut(working,"int")
@@ -89,7 +98,7 @@ def kwVar(line):
         type="int"
         working="=".join(working[1:])
         value=int(float(getValue(working)))
-        vars[name]=(type,value)
+        
     elif working.startswith("float"):
         working=cut(working,"float")
         working=working.split('=')
@@ -97,7 +106,7 @@ def kwVar(line):
         type="float"
         working="=".join(working[1:])
         value=float(str(getValue(working)))
-        vars[name]=(type,value)
+        
     elif working.startswith("bool"):
         working=cut(working,"bool")
         working=working.split('=')
@@ -105,7 +114,7 @@ def kwVar(line):
         type="bool"
         working="=".join(working[1:])
         value=isTruthy(getValue(working))
-        vars[name]=(type,value)
+        
     elif working.startswith("dynamic"):
         working=cut(working,"dynamic")
         working=working.split('=')
@@ -113,7 +122,7 @@ def kwVar(line):
         type="dynamic"
         working="=".join(working[1:])
         value=getValue(working)
-        vars[name]=(type,value)
+        
     elif working.startswith("auto"):
         working=cut(working,"auto")
         working=working.split('=')
@@ -121,7 +130,7 @@ def kwVar(line):
         working="=".join(working[1:])
         value=getValue(str(working))
         type=getRawType(value)
-        vars[name]=(type,value)
+        
     elif working.startswith("label"):
         global curLin
         working=cut(working,"label")
@@ -130,13 +139,15 @@ def kwVar(line):
             name=working[0].strip()
             type="label"
             value=int(getValue(working[1]))
-            vars[name]=(type,value)
+           
         else:
             name=working.strip()
             type="label"
             value=curLin
-            vars[name]=(type,value)
-
+    if local:
+        return (name,type,value)
+    vars[name]=(type,value)
+    
 def kwOut(line):
     working=cut(line,"out")
     global vars
@@ -146,6 +157,24 @@ def kwOut(line):
 def kwEnd(line):
     onExit()
 
+
+def runFunction(name): #Feeling cute, might git reset --hard later after i break this
+    locals=vars
+    def localVar(line,locals):
+        tmp=kwVar(line,local=True)
+        locals[tmp[0]]=tmp[1:]
+        return locals
+
+
+    #we need proxies for the functions, as they are local, and arent supposed to do global stuff
+    funwords={ 
+    "var":localVar,
+    "out":kwOut,
+    "if" :kwIf,
+    "end":kwEnd,
+    "goto":kwGoto,
+    None:None
+    }
 def kwGoto(line):
     global curLin
     dest=getValue(cut(line,"goto"))
@@ -337,6 +366,8 @@ def getValue(input:str):
         input=input.strip()
     global vars
     if input in vars:
+        if vars[input][0]=="function":
+            return vars[input][1]()
         return vars[input][1]
     else:
         if isNumber(input):
@@ -382,8 +413,10 @@ def setVar(name,value):
                 vars[name]=(type,float(value))
             elif type=="bool":
                 vars[name]=(type,bool(value))
-            else:
+            elif type=="dynamic":
                 vars[name]=(getType(value),value)
+            else:
+                errorMessage(f"Cannot assign value to {name} because it is not mutable")
         except:
             errorMessage(f"Cannot convert {value} (type : {getType(value)}) to {type}")
     else:
