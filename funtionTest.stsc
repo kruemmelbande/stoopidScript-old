@@ -1,0 +1,12 @@
+var int test = 0
+out test
+
+def amogus{
+    out "This should be printed"
+    var int test = 1
+    return test
+    out "This should not be printed"
+}
+out test
+out amogus 
+out test
