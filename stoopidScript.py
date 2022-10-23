@@ -1,5 +1,6 @@
 import array
 from dataclasses import replace
+import locale
 from sys import argv as args, exit
 vars={}
 file="helloWorld.stsc"
@@ -178,6 +179,12 @@ def kwOut(line,locals:dict=None):
     working=cut(line,"out")
     global vars
     working=getValue(working, locals)
+    print(cleanString(str(working)),end="")
+
+def kwOutln(line,locals:dict=None):
+    working=cut(line,"outln")
+    global vars
+    working=getValue(working, locals)
     print(cleanString(str(working)))
 
 def kwEnd(line,locals:dict=None):
@@ -186,7 +193,13 @@ def kwEnd(line,locals:dict=None):
 
 def runFunction(line): #Feeling cute, might git reset --hard later after i break this
     try:
-        locals=vars
+        global vars
+        locals={}
+        for i in vars:
+            locals[i]=vars[i] #for some reason locals=vars doesnt work and will change vars, when i edit locals. Im extremely confused
+
+        locals["amogus"]=("str","sus")
+
         def localVar(line,locals):  #did it need to be like this? no. did i do this first, then change the system, and not bother to update this? yes. I mean, its not clean, but it works, so i dont care
 
             tmp=kwVar(line,local=True,locals=locals)
@@ -200,6 +213,7 @@ def runFunction(line): #Feeling cute, might git reset --hard later after i break
         funwords={ 
         "var":localVar,
         "out":kwOut,
+        "outln":kwOutln,
         "if" :kwIf,
         "end":kwEnd,
         "goto":kwGoto,
@@ -238,6 +252,7 @@ def kwGoto(line,locals:dict=None):
 keywords={
     "var":kwVar,
     "out":kwOut,
+    "outln":kwOutln,
     "if" :kwIf,
     "end":kwEnd,
     "goto":kwGoto,
