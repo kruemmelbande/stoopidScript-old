@@ -1,26 +1,26 @@
 var str test = "Hello World"
-out test
+outln test
 var int test = 1.1
-out test
+outln test
 var float test = 1
-out test
-out "Testing 123"
+outln test
+outln "Testing 123"
 test=1+2
-out test
-out test*2*2+(2+2)
+outln test
+outln test*2*2+(2+2)
 var float test = 2.4
-out test
+outln test 
 var int test = test
-out test
+outln test
 var str test = "uwu"
-out test
+outln test
 test=1+2+3
-out test
+outln test
 var bool test = 1 << 2
-out test
+outln test
 if test {
-    out "Works!"
+    outln "Works!"
 }
 if !test {
-    out "Doesnt work!"
+    outln "Doesnt work!"
 }

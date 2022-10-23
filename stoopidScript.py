@@ -372,7 +372,7 @@ def solveEquasion(equasion: str,locals:dict=None) -> float:
             for i in range(len(ops)):
                 equasion += str(values[i]) + str((ops[i]))
             equasion += str(values[-1])
-            return (float(str((getValue(equasion),locals)))
+            return (float(str((getValue(equasion,locals))))
             )
         elif len(ops) == 1:
             #return float(operators[ops[0]](float(values[0]), float(values[1])))
@@ -381,7 +381,7 @@ def solveEquasion(equasion: str,locals:dict=None) -> float:
 
             return int(values[0])
     except Exception as e:
-            errorMessage(f"Failed to solve equasion {equasion}",e=e)
+            errorMessage(f"Failed to solve equasion {equasion}, ops:{ops}, values:{values}, order: {order}",e=e)
 
 def cleanString(input : str):
     input=input.strip()
@@ -520,14 +520,13 @@ def cut(input:str,toRemove:str):
 def errorMessage(message:str,e:Exception=None):
     global forcerun
     print("\033[91mError: "+message)
-    if e != None:
+    if e == None:
         lineInInterpreter="\033[91mNot availablen\033[0m"
     else:
         lineInInterpreter=e.__traceback__.tb_lineno
-    print(f"\033[0mError dump: \nvars: {vars}\nlineinProgram:{curLin}\nlineinInterpreter:{lineInInterpreter}\033[0m")
+    print(f"\033[0mError dump: \nvars: {vars}\nlineinProgram:{curLin+1}\nlineinInterpreter:{lineInInterpreter}\033[0m")
 
-    if not forcerun:
-        onExit()
+    
     if forcerun:
         print("\033[0merror ignored")
         return

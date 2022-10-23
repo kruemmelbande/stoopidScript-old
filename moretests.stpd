@@ -3,6 +3,6 @@ var label start
 if (x==10){
     end
 }
-out x
+outln x
 x=x+1
 goto start
