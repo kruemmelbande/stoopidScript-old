@@ -2,6 +2,8 @@
 
  Its like my stoopid language, except its nothing like it.
 
+### Installation
+you need to have python >= 3.10 installed, then you can just run it with `python stoopidScript.py <path to file>`
 ### The available commands are
 
  ```
