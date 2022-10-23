@@ -7,6 +7,7 @@
  ```
  var <type> <name> = <value>
  out <value>
+ outln <value>
  if <condition>{
     <code>
  }
