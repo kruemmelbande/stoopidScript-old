@@ -1,3 +1,6 @@
+import array
+from dataclasses import replace
+import locale
 from sys import argv as args, exit
 vars={}
 file="helloWorld.stsc"
@@ -25,7 +28,38 @@ if forcerun:
 
 operators= ["+","*","/","<<",">>","^","==","<=",">=","-"]
 
-def kwIf(line):
+def kwDef(line,locals:dict=None):
+    #print("a")
+    global vars,curLin
+    working=cut(line,"def")
+    name=working.replace("{","").replace("}","").strip()
+    type="func"
+    value=curLin
+    vars[name]=(type,value)
+    i=curLin-1
+    a=0
+    b=1
+    try:
+        while 1:
+            i+=1
+            line=program[i].strip()
+            for k in line:
+                if k=="{":
+                    a+=1
+                    b=0
+                if k=="}":
+                    a-=1
+                    b=0
+                if a==0 and b==0:
+                    break
+            else:
+                continue
+            break
+        curLin=i
+    except Exception as e:
+        errorMessage("Failed to find closing bracket!",e=e)
+
+def kwIf(line,locals:dict=None):
     try:
         global program, curLin
         working=cut(line,"if")
@@ -33,7 +67,7 @@ def kwIf(line):
         if "{" in working:
             toMath=working.replace("{","")
 
-        solved=getValue(toMath)
+        solved=getValue(toMath,locals)
         if solved:
             return
         else:
@@ -62,7 +96,8 @@ def kwIf(line):
             curLin=i
     except Exception as e:
         errorMessage("error resolving if statement, ",e=e)
-def kwVar(line):
+
+def kwVar(line,local=False,locals:dict=None):
     global vars
     working=cut(line,"var")
     if working.startswith("str"):
@@ -72,15 +107,15 @@ def kwVar(line):
             name=working[0].strip()
             type="str"
             value=working[1]
-            vars[name]=(type,value)
+            
         else:
             working=cut(working,"str")
             working=working.split('=')
             name=working[0].strip()
             type="str"
             working="=".join(working[1:])
-            value=getValue(working)
-            vars[name]=(type,value)
+            value=getValue(working, locals)
+            
 
     elif working.startswith("int"):
         working=cut(working,"int")
@@ -88,40 +123,40 @@ def kwVar(line):
         name=working[0].strip()
         type="int"
         working="=".join(working[1:])
-        value=int(float(getValue(working)))
-        vars[name]=(type,value)
+        value=int(float(getValue(working, locals)))
+        
     elif working.startswith("float"):
         working=cut(working,"float")
         working=working.split('=')
         name=working[0].strip()
         type="float"
         working="=".join(working[1:])
-        value=float(str(getValue(working)))
-        vars[name]=(type,value)
+        value=float(str(getValue(working, locals)))
+        
     elif working.startswith("bool"):
         working=cut(working,"bool")
         working=working.split('=')
         name=working[0].strip()
         type="bool"
         working="=".join(working[1:])
-        value=isTruthy(getValue(working))
-        vars[name]=(type,value)
+        value=isTruthy(getValue(working, locals))
+        
     elif working.startswith("dynamic"):
         working=cut(working,"dynamic")
         working=working.split('=')
         name=working[0].strip()
         type="dynamic"
         working="=".join(working[1:])
-        value=getValue(working)
-        vars[name]=(type,value)
+        value=getValue(working, locals)
+        
     elif working.startswith("auto"):
         working=cut(working,"auto")
         working=working.split('=')
         name=working[0].strip()
         working="=".join(working[1:])
-        value=getValue(str(working))
+        value=getValue(str(working), locals)
         type=getRawType(value)
-        vars[name]=(type,value)
+        
     elif working.startswith("label"):
         global curLin
         working=cut(working,"label")
@@ -129,34 +164,99 @@ def kwVar(line):
             working=working.split('=')
             name=working[0].strip()
             type="label"
-            value=int(getValue(working[1]))
-            vars[name]=(type,value)
+            value=int(getValue(working[1], locals))
+           
         else:
             name=working.strip()
             type="label"
             value=curLin
-            vars[name]=(type,value)
-
-def kwOut(line):
+    if local:
+        return (name,type,value)
+    else:
+        vars[name]=(type,value)
+    
+def kwOut(line,locals:dict=None):
     working=cut(line,"out")
     global vars
-    working=getValue(working)
+    working=getValue(working, locals)
+    print(cleanString(str(working)),end="")
+
+def kwOutln(line,locals:dict=None):
+    working=cut(line,"outln")
+    global vars
+    working=getValue(working, locals)
     print(cleanString(str(working)))
 
-def kwEnd(line):
+def kwEnd(line,locals:dict=None):
     onExit()
 
-def kwGoto(line):
+
+def runFunction(line): #Feeling cute, might git reset --hard later after i break this
+    try:
+        global vars
+        locals={}
+        for i in vars:
+            locals[i]=vars[i] #for some reason locals=vars doesnt work and will change vars, when i edit locals. Im extremely confused
+
+        locals["amogus"]=("str","sus")
+
+        def localVar(line,locals):  #did it need to be like this? no. did i do this first, then change the system, and not bother to update this? yes. I mean, its not clean, but it works, so i dont care
+
+            tmp=kwVar(line,local=True,locals=locals)
+
+            locals[tmp[0]]=tmp[1:]
+
+            return locals
+
+
+        #we need proxies for the functions, as they are local, and arent supposed to do global stuff
+        funwords={ 
+        "var":localVar,
+        "out":kwOut,
+        "outln":kwOutln,
+        "if" :kwIf,
+        "end":kwEnd,
+        "goto":kwGoto,
+        None:None
+        }
+        #this is me from the past! If you are trying to understand what im trying to do here, i am sorry, i dont know either
+        #anyway, good lucK!
+        #this is me from the future. Past me was dumb.
+        #it didnt need to be this complicated.
+
+        funLine=line
+        while funLine<len(program):
+            c=program[funLine]
+            kw=c.strip().split(" ")[0]
+            #print(kw,len(program),funLine)
+            if kw == "return":
+                return getValue(cut(c,"return"),locals)
+            if kw in funwords:
+                funwords[kw](c,locals)
+            else:
+                # #yes, im lazy, and the minimum required is to make this work, and i dont care for now if its inconvenient
+                 if '=' in c:
+                     if c.strip().split("=")[0].strip() in vars:
+                         errorMessage("Vars cant be changed in functions without using var!")
+                #         setVar(c.strip().split("=")[0].strip(),c.strip().split("=")[1].strip())
+            funLine+=1
+        errorMessage("Function ended without return statement!")
+    except Exception as e:
+
+        errorMessage(f"Error running function in line {line}",e=e)
+def kwGoto(line,locals:dict=None):
     global curLin
-    dest=getValue(cut(line,"goto"))
+    dest=getValue(cut(line,"goto"), locals)
     curLin=dest-1
 
 keywords={
     "var":kwVar,
     "out":kwOut,
+    "outln":kwOutln,
     "if" :kwIf,
     "end":kwEnd,
     "goto":kwGoto,
+    "def":kwDef,
     None:None
 }
 
@@ -167,15 +267,15 @@ def isNumber(x):
     except:
         return False
 
-def solveEquasion(equasion: str) -> float:
+def solveEquasion(equasion: str,locals:dict=None) -> float:
     """Solves the given equasion
-
     Args:
         equasion (str): the mathematical equasion to be solved
 
     Returns:
         float: solved equasion
     """
+
     try:
 
         global vars,operators
@@ -203,10 +303,10 @@ def solveEquasion(equasion: str) -> float:
                     stop=j
                     break
             else:
-                print("No matching bracket")
+                errorMessage("No matching bracket")
             #print(equasion[start + 1 : stop])
             tmpequasion = equasion[:start]
-            tmpequasion += str(int(getValue(equasion[start + 1 : stop])))
+            tmpequasion += str(int(getValue(equasion[start + 1 : stop],locals)))
             tmpequasion += equasion[stop + 1 :]
             return getValue(tmpequasion)
 
@@ -272,7 +372,7 @@ def solveEquasion(equasion: str) -> float:
             for i in range(len(ops)):
                 equasion += str(values[i]) + str((ops[i]))
             equasion += str(values[-1])
-            return (float(str((getValue(equasion))))
+            return (float(str((getValue(equasion),locals)))
             )
         elif len(ops) == 1:
             #return float(operators[ops[0]](float(values[0]), float(values[1])))
@@ -289,7 +389,7 @@ def cleanString(input : str):
         return input[1:-1]
     return input
 
-def solveBasicMath(input:str) -> int|float|bool:
+def solveBasicMath(input:str,locals:dict=None) -> int|float|bool:
     """ input: A math equasion, with two numbers or variables and one operator
         output: A solution
     """
@@ -302,8 +402,8 @@ def solveBasicMath(input:str) -> int|float|bool:
                 comp=i
                 break
         num1,num2=input.split(comp)
-        num1=getValue(num1)
-        num2=getValue(num2)
+        num1=getValue(num1,locals)
+        num2=getValue(num2,locals)
         if comp=="+":
             out= num1+num2
         elif comp=="-":
@@ -327,16 +427,26 @@ def solveBasicMath(input:str) -> int|float|bool:
         return out
 
     else:
-        return getValue(input)
+        return getValue(input,locals)
 
 def getRawType(input:any):
     return type(input).__name__
 
-def getValue(input:str):
+def getValue(input:str,locals:dict=None):
+    if input=="":
+        return 0
     if getRawType(input)=="str":
         input=input.strip()
+    if locals!=None:
+        try:
+            if input in locals:
+                return locals[input][1]
+        except:
+            print(input,locals)
     global vars
     if input in vars:
+        if vars[input][0]=="func":
+            return runFunction(vars[input][1])
         return vars[input][1]
     else:
         if isNumber(input):
@@ -364,8 +474,12 @@ def getValue(input:str):
                     return f'"{input}"'
 
 def isTruthy(inp):
-
-    return str(inp).lower() in ["true","1","yes"]
+    return str(inp).lower() in [
+        "true",
+        "1",
+        "yes",
+        "Yes, do as I say!"#Felt cute, might remove my desktop environment later
+        ]
 
 
 def setVar(name,value):
@@ -382,8 +496,10 @@ def setVar(name,value):
                 vars[name]=(type,float(value))
             elif type=="bool":
                 vars[name]=(type,bool(value))
-            else:
+            elif type=="dynamic":
                 vars[name]=(getType(value),value)
+            else:
+                errorMessage(f"Cannot assign value to {name} because it is not mutable")
         except:
             errorMessage(f"Cannot convert {value} (type : {getType(value)}) to {type}")
     else:
